@@ -8,11 +8,7 @@ group = 'dev.abykov.cloudmarketplace'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    sourceCompatibility = '21'
-}
-
-jar {
-    enabled = false
+    sourceCompatibility = JavaVersion.VERSION_21
 }
 
 configurations {
@@ -28,31 +24,77 @@ repositories {
 ext {
     wiremockVersion = '3.2.0'
     springdocVersion = '2.5.0'
+    testcontainersVersion = '2.0.3'
+}
+
+dependencyManagement {
+    imports {
+        // все управление версиями Testcontainers + docker-java здесь
+        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+    }
+}
+
+jar {
+    enabled = false
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // -------------------- Spring Boot --------------------
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation "org.springdoc:springdoc-openapi-starter-webflux-ui:${springdocVersion}"
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // -------------------- Database --------------------
     implementation 'org.postgresql:r2dbc-postgresql'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.flywaydb:flyway-core'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'org.springframework:spring-jdbc'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // -------------------- Migration --------------------
+    implementation 'org.flywaydb:flyway-core'
+
+    // -------------------- OpenAPI --------------------
+    implementation "org.springdoc:springdoc-openapi-starter-webflux-ui:${springdocVersion}"
+
+    // -------------------- Lombok --------------------
+    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // -------------------- Config processor --------------------
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // -------------------- Testing --------------------
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'io.projectreactor:reactor-test'
+
+    // Testcontainers (ничего не добавляем вручную)
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:r2dbc'
+
+    // -------------------- HTTP mocking --------------------
     testImplementation 'com.squareup.okhttp3:mockwebserver'
     testImplementation "org.wiremock:wiremock-standalone:${wiremockVersion}"
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        exceptionFormat "full"
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        showStandardStreams true
+    }
+
+    environment "TESTCONTAINERS_RYUK_DISABLED", "true"
+}
+
+tasks.withType(Test).configureEach {
+    doFirst {
+        println "CLASSPATH:\n" + classpath.files.join("\n")
+    }
 }

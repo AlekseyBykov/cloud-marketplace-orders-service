@@ -2,7 +2,7 @@ package dev.abykov.cloudmarketplace.orders.entity;
 
 public enum OrderStatus {
 
-    NEW,
+    CREATED,
     ACCEPTED,
     REJECTED
 }

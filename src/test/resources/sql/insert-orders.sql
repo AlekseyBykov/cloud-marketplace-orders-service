@@ -1,0 +1,87 @@
+INSERT INTO orders (
+    total_price,
+    city,
+    street,
+    house,
+    apartment,
+    items,
+    status,
+    created_by,
+    created_at
+)
+VALUES
+(
+    10,
+    'CityOne',
+    'StreetOne',
+    1,
+    1,
+    '[
+        {"menuItemName":"One","price":4,"quantity":10},
+        {"menuItemName":"Two","price":3,"quantity":5},
+        {"menuItemName":"Three","price":3,"quantity":5}
+     ]',
+    'CREATED',
+    'username1',
+    '2024-02-18 10:23:54'
+),
+(
+    10,
+    'CityTwo',
+    'StreetTwo',
+    1,
+    1,
+    '[
+        {"menuItemName":"One","price":4,"quantity":10},
+        {"menuItemName":"Two","price":3,"quantity":5},
+        {"menuItemName":"Three","price":3,"quantity":5}
+     ]',
+    'CREATED',
+    'username2',
+    '2024-02-19 10:23:54'
+),
+(
+    10,
+    'CityOne',
+    'StreetOne',
+    1,
+    1,
+    '[
+        {"menuItemName":"One","price":4,"quantity":10},
+        {"menuItemName":"Two","price":3,"quantity":5},
+        {"menuItemName":"Three","price":3,"quantity":5}
+     ]',
+    'CREATED',
+    'username1',
+    '2024-02-20 10:23:54'
+),
+(
+    10,
+    'CityTwo',
+    'StreetTwo',
+    1,
+    1,
+    '[
+        {"menuItemName":"One","price":4,"quantity":10},
+        {"menuItemName":"Two","price":3,"quantity":5},
+        {"menuItemName":"Three","price":3,"quantity":5}
+     ]',
+    'CREATED',
+    'username2',
+    '2024-02-21 10:23:54'
+),
+(
+    10,
+    'CityOne',
+    'StreetOne',
+    1,
+    1,
+    '[
+        {"menuItemName":"One","price":4,"quantity":10},
+        {"menuItemName":"Two","price":3,"quantity":5},
+        {"menuItemName":"Three","price":3,"quantity":5}
+     ]',
+    'CREATED',
+    'username1',
+    '2024-02-22 10:23:54'
+);
