@@ -30,6 +30,45 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.function.Predicate;
 
+/**
+ * Integration test for {@link OrderRepository} using Testcontainers and R2DBC.
+ *
+ * <p><b>Architecture specifics:</b></p>
+ * <ul>
+ *     <li>Uses {@link DataR2dbcTest} slice — only data layer is loaded (no full Spring context).</li>
+ *     <li>Reactive stack (R2DBC) is used for repository operations.</li>
+ *     <li>PostgreSQL is provided via Testcontainers.</li>
+ * </ul>
+ *
+ * <p><b>Database initialization strategy:</b></p>
+ * <ul>
+ *     <li>Flyway is NOT used in tests (even though configured), because {@code @DataR2dbcTest}
+ *     does not trigger Flyway auto-configuration.</li>
+ *     <li>Schema is created manually via SQL scripts before each test.</li>
+ *     <li>Test data is inserted manually using SQL scripts.</li>
+ *     <li>Database is cleaned after each test by dropping the table.</li>
+ * </ul>
+ *
+ * <p><b>Reactive vs Blocking:</b></p>
+ * <ul>
+ *     <li>Repository methods return {@link reactor.core.publisher.Flux} (non-blocking).</li>
+ *     <li>Assertions are performed using {@link reactor.test.StepVerifier}.</li>
+ *     <li><b>Blocking is used ONLY in test setup/teardown</b> via {@code .block()}:
+ *         <ul>
+ *             <li>Schema creation</li>
+ *             <li>Test data insertion</li>
+ *             <li>Cleanup</li>
+ *         </ul>
+ *     </li>
+ *     <li>This is acceptable because test lifecycle is not part of reactive flow.</li>
+ * </ul>
+ *
+ * <p><b>Important note:</b></p>
+ * <ul>
+ *     <li>Never use {@code .block()} inside production reactive pipelines.</li>
+ *     <li>Blocking in tests is safe and simplifies deterministic setup.</li>
+ * </ul>
+ */
 @DataR2dbcTest
 @Testcontainers
 @Import(R2dbcConfig.class)
@@ -84,6 +123,11 @@ class OrderRepositoryTest {
         registry.add("spring.flyway.password", POSTGRES::getPassword);
     }
 
+    /**
+     * Initializes database schema and inserts test data before each test.
+     *
+     * <p>Uses blocking calls to ensure deterministic state before test execution.</p>
+     */
     @BeforeEach
     void setUp(
             @Value("classpath:sql/schema.sql") Resource schema,
@@ -93,6 +137,11 @@ class OrderRepositoryTest {
         executeSql(data);
     }
 
+    /**
+     * Cleans database after each test by dropping the table.
+     *
+     * <p>Ensures full isolation between test cases.</p>
+     */
     @AfterEach
     void tearDown() {
         executeSqlFromString("DROP TABLE IF EXISTS orders CASCADE");
@@ -137,12 +186,26 @@ class OrderRepositoryTest {
         return orderMatches(expectedCreatedAt).and(order -> order.getUpdatedAt() != null);
     }
 
+    /**
+     * Cleans database after each test by dropping the table.
+     *
+     * <p>Ensures full isolation between test cases.</p>
+     */
     private void executeSql(Resource script) {
         new ResourceDatabasePopulator(script)
                 .populate(connectionFactory)
                 .block();
     }
 
+    /**
+     * Executes raw SQL string against the database.
+     *
+     * <p>Used mainly for cleanup operations.</p>
+     *
+     * <p><b>Blocking operation:</b> uses {@code .block()} for deterministic execution.</p>
+     *
+     * @param sql SQL statement
+     */
     private void executeSqlFromString(String sql) {
         new ResourceDatabasePopulator(new ByteArrayResource(sql.getBytes()))
                 .populate(connectionFactory)
