@@ -22,3 +22,12 @@ spring:
     url: jdbc:postgresql://localhost:15432/orders_db
     user: user
     password: password
+
+# See OrderServiceProps class
+external:
+  menu-service-url: "http://localhost:9091"
+  menu-info-path: "/v1/menu-items/menu-info"
+  default-timeout: 2s
+  retry-backoff: 100ms
+  retry-count: 5
+  retry-jitter: 0.75
