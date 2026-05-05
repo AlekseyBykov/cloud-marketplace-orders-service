@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "name": "One",
+      "price": 10.1,
+      "available": true
+    },
+    {
+      "name": "Two",
+      "price": 20.2,
+      "available": true
+    },
+    {
+      "name": "Three",
+      "price": 30.3,
+      "available": true
+    }
+  ]
+}
