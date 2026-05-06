@@ -4,7 +4,7 @@
 
 Cloud Marketplace Orders Service is a reactive microservice responsible for managing customer orders.
 
-The service is built using **Spring WebFlux** and **R2DBC**, providing non-blocking data access and asynchronous request handling. 
+The service is built using **Spring WebFlux** and **R2DBC**, providing non-blocking data access and asynchronous request handling.
 It is designed as part of a larger microservices ecosystem.
 
 ## Tech Stack
@@ -98,8 +98,8 @@ V1__create_orders_table.sql
 * No Hibernate / JPA
 * All repository methods return:
 
-    * `Flux<T>` — stream of elements
-    * `Mono<T>` — single element
+  * `Flux<T>` — stream of elements
+  * `Mono<T>` — single element
 
 ⚠️ Important:
 
@@ -108,12 +108,41 @@ V1__create_orders_table.sql
 
 ### Testing
 
-Integration tests use:
+The project uses a combination of integration and HTTP-level testing.
 
-* Testcontainers (PostgreSQL)
-* StepVerifier (Reactor testing)
+#### Integration Testing
 
-Run tests:
+Integration tests run against real infrastructure:
+
+* **PostgreSQL (Testcontainers)** — real database instance
+* **Spring Boot context** — full application context is started
+* **StepVerifier** — for reactive flow assertions
+
+This allows testing:
+
+* persistence layer (R2DBC)
+* service layer logic
+* reactive pipelines
+
+#### HTTP Integration Testing
+
+External HTTP dependencies (Menu Service) are not called directly in tests.
+
+Instead, they are replaced with controlled test servers:
+
+* **WireMock** — used for service-level integration tests
+  (simulates external API behavior via request/response stubs)
+
+* **MockWebServer** — used for HTTP client testing
+  (simulates low-level scenarios like retries, timeouts, failures)
+
+This approach allows:
+
+* deterministic test execution
+* simulation of edge cases (timeouts, 5xx, partial responses)
+* verification of outgoing HTTP calls
+
+#### Running tests
 
 ```bash
 ./gradlew test
@@ -124,3 +153,4 @@ Run tests:
 * Flyway uses JDBC (blocking) but only during startup — this is expected
 * R2DBC is used for runtime operations (non-blocking)
 * Docker is required for integration tests
+* External services are mocked in tests (no real HTTP calls)
