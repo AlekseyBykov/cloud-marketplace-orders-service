@@ -84,8 +84,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Flux<OrderResponse> getOrdersOfUser(String username, SortBy sortBy, int from, int size) {
-
-        var pageRequest = buildPageRequest(sortBy, from, size);
+        PageRequest pageRequest = buildPageRequest(sortBy, from, size);
 
         return repository.findAllByCreatedBy(username, pageRequest)
                 .map(orderMapper::mapToResponse);

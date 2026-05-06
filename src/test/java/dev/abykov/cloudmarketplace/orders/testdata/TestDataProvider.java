@@ -1,5 +1,7 @@
 package dev.abykov.cloudmarketplace.orders.testdata;
 
+import dev.abykov.cloudmarketplace.orders.dto.api.Address;
+import dev.abykov.cloudmarketplace.orders.dto.api.CreateOrderRequest;
 import okhttp3.mockwebserver.MockResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -9,6 +11,7 @@ import org.springframework.util.ResourceUtils;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class TestDataProvider {
 
@@ -27,6 +30,22 @@ public class TestDataProvider {
                 .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setResponseCode(HttpStatus.OK.value())
                 .setBody(readSuccessfulResponse());
+    }
+
+    public static CreateOrderRequest createOrderRequest() {
+        return CreateOrderRequest.builder()
+                .address(Address.builder()
+                        .city("City")
+                        .street("Street")
+                        .house(1)
+                        .apartment(1)
+                        .build())
+                .nameToQuantity(Map.of(
+                        "One", 1,
+                        "Two", 2,
+                        "Three", 3
+                ))
+                .build();
     }
 
     public static String readSuccessfulResponse() {

@@ -30,9 +30,9 @@ public class OrderMapper {
 
         List<OrderLineItem> items = request.getNameToQuantity().entrySet().stream()
                 .map(entry -> {
-                    var name = entry.getKey();
-                    var quantity = entry.getValue();
-                    var info = menuInfoMap.get(name);
+                    String name = entry.getKey();
+                    Integer quantity = entry.getValue();
+                    MenuInfo info = menuInfoMap.get(name);
 
                     return new OrderLineItem(
                             name,
