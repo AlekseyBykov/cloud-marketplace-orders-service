@@ -1,19 +1,26 @@
 package dev.abykov.cloudmarketplace.orders.client;
 
-import dev.abykov.cloudmarketplace.orders.testdata.TestConstants;
-import okhttp3.mockwebserver.*;
-import org.junit.jupiter.api.*;
+import dev.abykov.cloudmarketplace.orders.config.props.OrderServiceProps;
+import dev.abykov.cloudmarketplace.orders.dto.external.MenuInfo;
+import dev.abykov.cloudmarketplace.orders.dto.external.OrderMenuRequest;
+import dev.abykov.cloudmarketplace.orders.dto.external.OrderMenuResponse;
+import dev.abykov.cloudmarketplace.orders.testdata.TestDataProvider;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import dev.abykov.cloudmarketplace.orders.config.props.OrderServiceProps;
-import dev.abykov.cloudmarketplace.orders.dto.external.*;
-import dev.abykov.cloudmarketplace.orders.testdata.TestDataProvider;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.*;
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,14 +46,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MenuClientTest {
 
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(1);
+    private static final Duration RETRY_BACKOFF = Duration.ofMillis(10);
+    private static final int RETRY_COUNT = 3;
+    private static final double RETRY_JITTER = 0.75;
+
     private final OrderServiceProps props = new OrderServiceProps(
             "http://localhost:9091",
             "/api/menu-items/resolve",
 
-            TestConstants.DEFAULT_TIMEOUT,
-            TestConstants.RETRY_BACKOFF,
-            TestConstants.RETRY_COUNT,
-            TestConstants.RETRY_JITTER
+            DEFAULT_TIMEOUT,
+            RETRY_BACKOFF,
+            RETRY_COUNT,
+            RETRY_JITTER
     );
 
     private MenuClient menuClient;
@@ -181,7 +193,7 @@ class MenuClientTest {
     private void mockDelayedResponse() {
         mockWebServer.enqueue(
                 TestDataProvider.partialSuccessResponse()
-                        .setBodyDelay(TestConstants.DELAY_MILLIS, TimeUnit.MILLISECONDS)
+                        .setBodyDelay(1500, TimeUnit.MILLISECONDS)
         );
     }
 

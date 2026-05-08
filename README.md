@@ -4,8 +4,16 @@
 
 Cloud Marketplace Orders Service is a reactive microservice responsible for managing customer orders.
 
-The service is built using **Spring WebFlux** and **R2DBC**, providing non-blocking data access and asynchronous request handling.
+The service is built using **Spring WebFlux** and **R2DBC**, providing non-blocking data access and asynchronous request
+handling.
 It is designed as part of a larger microservices ecosystem.
+
+The service exposes a reactive REST API for:
+
+* creating customer orders
+* retrieving user orders
+* validating incoming requests
+* handling HTTP/API errors using RFC 7807 Problem Details
 
 ## Tech Stack
 
@@ -47,28 +55,75 @@ http://localhost:9092
 
 #### 3. Docker Commands Cheat Sheet
 
-### Start containers
+##### Start containers
 
 ```bash
 docker compose up -d
 ```
 
-### Stop containers
+##### Stop containers
 
 ```bash
 docker compose down
 ```
 
-### Stop + remove volumes (clean DB)
+##### Stop + remove volumes (clean DB)
 
 ```bash
 docker compose down -v
 ```
 
-### View logs
+##### View logs
 
 ```bash
 docker compose logs -f
+```
+
+### REST API
+
+The service exposes HTTP endpoints for order management.
+
+Base URL:
+
+```text
+http://localhost:9092/v1/orders
+```
+
+#### Main endpoints
+
+| Method | Endpoint     | Description        |
+|--------|--------------|--------------------|
+| POST   | `/v1/orders` | Create a new order |
+| GET    | `/v1/orders` | Get user orders    |
+
+#### Authentication model
+
+Authentication is not implemented yet.
+
+User identity is passed via HTTP header:
+
+```text
+X-User-Name
+```
+
+Example:
+
+```http
+X-User-Name: username1
+```
+
+#### OpenAPI / Swagger UI
+
+Swagger UI:
+
+```text
+http://localhost:9092/swagger-ui.html
+```
+
+OpenAPI spec:
+
+```text
+http://localhost:9092/api-docs
 ```
 
 ### Database
@@ -98,8 +153,8 @@ V1__create_orders_table.sql
 * No Hibernate / JPA
 * All repository methods return:
 
-  * `Flux<T>` — stream of elements
-  * `Mono<T>` — single element
+    * `Flux<T>` — stream of elements
+    * `Mono<T>` — single element
 
 ⚠️ Important:
 
@@ -130,7 +185,7 @@ External HTTP dependencies (Menu Service) are not called directly in tests.
 
 Instead, they are replaced with controlled test servers:
 
-* **WireMock** — used for service-level integration tests
+* **WireMock** — used for HTTP integration testing
   (simulates external API behavior via request/response stubs)
 
 * **MockWebServer** — used for HTTP client testing
@@ -148,7 +203,7 @@ This approach allows:
 ./gradlew test
 ```
 
-### Known Notes
+### Additional Notes
 
 * Flyway uses JDBC (blocking) but only during startup — this is expected
 * R2DBC is used for runtime operations (non-blocking)
