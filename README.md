@@ -6,6 +6,7 @@ Cloud Marketplace Orders Service is a reactive microservice responsible for mana
 
 The service is built using **Spring WebFlux** and **R2DBC**, providing non-blocking data access and asynchronous request
 handling.
+
 It is designed as part of a larger microservices ecosystem.
 
 The service exposes a reactive REST API for:
@@ -98,7 +99,8 @@ http://localhost:9092/v1/orders
 
 #### Authentication model
 
-Authentication is not implemented yet.
+Authentication and authorization are not implemented yet. Current implementation uses request headers only for
+demo/testing purposes.
 
 User identity is passed via HTTP header:
 
@@ -163,39 +165,63 @@ V1__create_orders_table.sql
 
 ### Testing
 
-The project uses a combination of integration and HTTP-level testing.
+The project uses several testing approaches depending on the application layer.
 
-#### Integration Testing
+#### Repository Integration Testing
 
-Integration tests run against real infrastructure:
+Repository tests use:
 
-* **PostgreSQL (Testcontainers)** — real database instance
-* **Spring Boot context** — full application context is started
-* **StepVerifier** — for reactive flow assertions
+* `@DataR2dbcTest`
+* PostgreSQL via Testcontainers
+* real R2DBC interaction
+* manually initialized schema and test data
 
-This allows testing:
+These tests verify:
 
-* persistence layer (R2DBC)
-* service layer logic
-* reactive pipelines
+* reactive repository queries
+* sorting and pagination
+* database interaction
+* R2DBC mappings
 
-#### HTTP Integration Testing
+Flyway is intentionally disabled in repository slice tests to keep them lightweight and isolated.
 
-External HTTP dependencies (Menu Service) are not called directly in tests.
+#### Full HTTP Integration Testing
 
-Instead, they are replaced with controlled test servers:
+Controller-level integration tests use:
 
-* **WireMock** — used for HTTP integration testing
-  (simulates external API behavior via request/response stubs)
+* `@SpringBootTest`
+* `WebTestClient`
+* real Spring Boot application context
+* PostgreSQL via Testcontainers
 
-* **MockWebServer** — used for HTTP client testing
-  (simulates low-level scenarios like retries, timeouts, failures)
+These tests verify the complete request flow:
 
-This approach allows:
+```text
+HTTP → Controller → Service → Repository → Database
+```
+
+Covered scenarios include:
+
+* request validation
+* reactive request handling
+* exception handling
+* RFC 7807 Problem Details
+* HTTP status codes
+* database persistence
+
+#### External HTTP Dependency Testing
+
+External HTTP dependencies (Menu Service) are replaced with controlled test servers.
+
+* **WireMock** — simulates external API behavior using request/response stubs.
+* **MockWebServer** — simulates low-level HTTP client scenarios (timeouts, retries, failures, delayed responses).
+
+This allows:
 
 * deterministic test execution
-* simulation of edge cases (timeouts, 5xx, partial responses)
+* reproducible edge cases
 * verification of outgoing HTTP calls
+* testing retry and timeout behavior
 
 #### Running tests
 

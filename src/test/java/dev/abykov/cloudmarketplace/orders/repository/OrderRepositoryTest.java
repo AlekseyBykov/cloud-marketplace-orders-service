@@ -31,45 +31,47 @@ import java.time.Month;
 import java.util.function.Predicate;
 
 /**
- * Integration test for {@link OrderRepository} using Testcontainers and R2DBC.
+ * Repository integration test for {@link OrderRepository}.
  *
- * <p><b>Architecture specifics:</b></p>
+ * <p>This test verifies reactive repository behavior against a real PostgreSQL
+ * instance started via Testcontainers.</p>
+ *
+ * <p><b>Architecture:</b></p>
+ *
+ * <pre>
+ * OrderRepository
+ *        ↓
+ * R2DBC
+ *        ↓
+ * PostgreSQL (Testcontainers)
+ * </pre>
+ *
+ * <p><b>Test slice:</b></p>
  * <ul>
- *     <li>Uses {@link DataR2dbcTest} slice — only data layer is loaded (no full Spring context).</li>
- *     <li>Reactive stack (R2DBC) is used for repository operations.</li>
- *     <li>PostgreSQL is provided via Testcontainers.</li>
+ *     <li>{@link DataR2dbcTest} loads only data-layer components.</li>
+ *     <li>No full Spring Boot application context is started.</li>
+ *     <li>Flyway is disabled for repository slice tests.</li>
  * </ul>
  *
  * <p><b>Database initialization strategy:</b></p>
  * <ul>
- *     <li>Flyway is NOT used in tests (even though configured), because {@code @DataR2dbcTest}
- *     does not trigger Flyway auto-configuration.</li>
- *     <li>Schema is created manually via SQL scripts before each test.</li>
- *     <li>Test data is inserted manually using SQL scripts.</li>
- *     <li>Database is cleaned after each test by dropping the table.</li>
+ *     <li>Schema is created manually from {@code schema.sql}.</li>
+ *     <li>Test data is inserted manually before each test.</li>
+ *     <li>Database is cleaned after each test.</li>
  * </ul>
  *
- * <p><b>Reactive vs Blocking:</b></p>
+ * <p><b>Reactive specifics:</b></p>
  * <ul>
- *     <li>Repository methods return {@link reactor.core.publisher.Flux} (non-blocking).</li>
- *     <li>Assertions are performed using {@link reactor.test.StepVerifier}.</li>
- *     <li><b>Blocking is used ONLY in test setup/teardown</b> via {@code .block()}:
- *         <ul>
- *             <li>Schema creation</li>
- *             <li>Test data insertion</li>
- *             <li>Cleanup</li>
- *         </ul>
- *     </li>
- *     <li>This is acceptable because test lifecycle is not part of reactive flow.</li>
- * </ul>
- *
- * <p><b>Important note:</b></p>
- * <ul>
- *     <li>Never use {@code .block()} inside production reactive pipelines.</li>
- *     <li>Blocking in tests is safe and simplifies deterministic setup.</li>
+ *     <li>Repository methods return {@link reactor.core.publisher.Flux}.</li>
+ *     <li>Assertions are performed using {@link StepVerifier}.</li>
+ *     <li>Blocking operations are used only during test setup/cleanup.</li>
  * </ul>
  */
-@DataR2dbcTest
+@DataR2dbcTest(
+        properties = {
+                "spring.flyway.enabled=false"
+        }
+)
 @Testcontainers
 @Import(R2dbcConfig.class)
 @ImportAutoConfiguration(JacksonAutoConfiguration.class)
@@ -106,27 +108,33 @@ class OrderRepositoryTest {
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:16.1"));
 
+    /**
+     * Configures R2DBC connection properties dynamically
+     * using Testcontainers PostgreSQL instance.
+     *
+     * <p>Repository slice tests do not use application.yml
+     * database configuration directly.</p>
+     */
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        String r2dbcUrl = "r2dbc:postgresql://" +
-                POSTGRES.getHost() + ":" +
-                POSTGRES.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT) + "/" +
-                POSTGRES.getDatabaseName();
+        String r2dbcUrl =
+                "r2dbc:postgresql://"
+                        + POSTGRES.getHost()
+                        + ":"
+                        + POSTGRES.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT)
+                        + "/"
+                        + POSTGRES.getDatabaseName();
 
         registry.add("spring.r2dbc.url", () -> r2dbcUrl);
         registry.add("spring.r2dbc.username", POSTGRES::getUsername);
         registry.add("spring.r2dbc.password", POSTGRES::getPassword);
-
-        // Flyway uses JDBC
-        registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.flyway.user", POSTGRES::getUsername);
-        registry.add("spring.flyway.password", POSTGRES::getPassword);
     }
 
     /**
-     * Initializes database schema and inserts test data before each test.
+     * Creates database schema and inserts test data before each test.
      *
-     * <p>Uses blocking calls to ensure deterministic state before test execution.</p>
+     * <p>Schema initialization is performed manually because Flyway
+     * is disabled in repository slice tests.</p>
      */
     @BeforeEach
     void setUp(
@@ -138,18 +146,26 @@ class OrderRepositoryTest {
     }
 
     /**
-     * Cleans database after each test by dropping the table.
+     * Removes database objects after each test.
      *
-     * <p>Ensures full isolation between test cases.</p>
+     * <p>Ensures complete isolation between test cases.</p>
      */
     @AfterEach
     void tearDown() {
         executeSqlFromString("DROP TABLE IF EXISTS orders CASCADE");
     }
 
+    /**
+     * Verifies that repository returns user orders
+     * sorted by creation date in ascending order.
+     */
     @Test
     void shouldReturnUserOrdersSortedByCreationDate() {
-        Flux<Order> result = repository.findAllByCreatedBy(USERNAME, FIRST_PAGE_SORTED_BY_DATE_ASC);
+        Flux<Order> result =
+                repository.findAllByCreatedBy(
+                        USERNAME,
+                        FIRST_PAGE_SORTED_BY_DATE_ASC
+                );
 
         StepVerifier.create(result)
                 .expectNextMatches(orderMatches(FIRST_ORDER_DATE))
@@ -157,39 +173,69 @@ class OrderRepositoryTest {
                 .verifyComplete();
     }
 
+    /**
+     * Verifies that repository returns user orders
+     * sorted by creation date in descending order.
+     */
     @Test
     void shouldReturnUserOrdersSortedByCreationDateDesc() {
-        Flux<Order> result = repository.findAllByCreatedBy(USERNAME, FIRST_PAGE_SORTED_BY_DATE_DESC);
+        Flux<Order> result =
+                repository.findAllByCreatedBy(
+                        USERNAME,
+                        FIRST_PAGE_SORTED_BY_DATE_DESC
+                );
 
         StepVerifier.create(result)
                 .expectNextMatches(orderMatches(THIRD_ORDER_DATE))
-                .expectNextMatches(orderMatchesWithUpdatedAt(SECOND_ORDER_DATE))
+                .expectNextMatches(
+                        orderMatchesWithUpdatedAt(SECOND_ORDER_DATE)
+                )
                 .verifyComplete();
     }
 
+    /**
+     * Verifies that repository returns empty result
+     * when user has no orders.
+     */
     @Test
     void shouldReturnEmptyResultWhenUserHasNoOrders() {
-        Flux<Order> result = repository.findAllByCreatedBy(UNKNOWN_USERNAME, FIRST_PAGE_SORTED_BY_DATE_ASC_LARGE);
+        Flux<Order> result =
+                repository.findAllByCreatedBy(
+                        UNKNOWN_USERNAME,
+                        FIRST_PAGE_SORTED_BY_DATE_ASC_LARGE
+                );
 
         StepVerifier.create(result)
                 .expectNextCount(0)
                 .verifyComplete();
     }
 
+    /**
+     * Creates predicate for verifying order ownership
+     * and creation timestamp.
+     */
     private Predicate<Order> orderMatches(LocalDateTime expectedDate) {
         return order ->
-                USERNAME.equals(order.getCreatedBy()) &&
-                        expectedDate.equals(order.getCreatedAt());
-    }
-
-    private Predicate<Order> orderMatchesWithUpdatedAt(LocalDateTime expectedCreatedAt) {
-        return orderMatches(expectedCreatedAt).and(order -> order.getUpdatedAt() != null);
+                USERNAME.equals(order.getCreatedBy())
+                        && expectedDate.equals(order.getCreatedAt());
     }
 
     /**
-     * Cleans database after each test by dropping the table.
+     * Creates predicate for verifying order ownership,
+     * creation timestamp and updatedAt presence.
+     */
+    private Predicate<Order> orderMatchesWithUpdatedAt(
+            LocalDateTime expectedCreatedAt
+    ) {
+        return orderMatches(expectedCreatedAt)
+                .and(order -> order.getUpdatedAt() != null);
+    }
+
+    /**
+     * Executes SQL script using blocking setup operations.
      *
-     * <p>Ensures full isolation between test cases.</p>
+     * <p>Blocking is acceptable here because test lifecycle
+     * is outside reactive request processing.</p>
      */
     private void executeSql(Resource script) {
         new ResourceDatabasePopulator(script)
@@ -198,16 +244,14 @@ class OrderRepositoryTest {
     }
 
     /**
-     * Executes raw SQL string against the database.
+     * Executes raw SQL statement.
      *
-     * <p>Used mainly for cleanup operations.</p>
-     *
-     * <p><b>Blocking operation:</b> uses {@code .block()} for deterministic execution.</p>
-     *
-     * @param sql SQL statement
+     * <p>Mainly used for cleanup operations.</p>
      */
     private void executeSqlFromString(String sql) {
-        new ResourceDatabasePopulator(new ByteArrayResource(sql.getBytes()))
+        new ResourceDatabasePopulator(
+                new ByteArrayResource(sql.getBytes())
+        )
                 .populate(connectionFactory)
                 .block();
     }

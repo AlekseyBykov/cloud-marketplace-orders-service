@@ -3,6 +3,7 @@ package dev.abykov.cloudmarketplace.orders.controller;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import dev.abykov.cloudmarketplace.orders.dto.api.CreateOrderRequest;
 import dev.abykov.cloudmarketplace.orders.dto.api.OrderResponse;
+import dev.abykov.cloudmarketplace.orders.entity.OrderLineItem;
 import dev.abykov.cloudmarketplace.orders.entity.OrderStatus;
 import dev.abykov.cloudmarketplace.orders.testdata.TestDataProvider;
 import io.r2dbc.spi.ConnectionFactory;
@@ -28,6 +29,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static dev.abykov.cloudmarketplace.orders.controller.OrderController.USER_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 /**
  * Full integration test for {@link OrderController}.
@@ -146,14 +148,30 @@ class OrderControllerTest {
                 .expectStatus().isCreated()
                 .expectBody(OrderResponse.class)
                 .value(response -> {
+
                     assertThat(response.getOrderId())
                             .isNotNull();
 
                     assertThat(response.getStatus())
                             .isEqualTo(OrderStatus.CREATED);
 
-                    assertThat(response.getOrderLineItems())
-                            .isEqualTo(TestDataProvider.createdItems());
+                    var items = response.getOrderLineItems()
+                            .stream()
+                            .sorted(Comparator.comparing(
+                                    OrderLineItem::getMenuItemName
+                            ))
+                            .toList();
+
+                    assertThat(items)
+                            .extracting(
+                                    OrderLineItem::getMenuItemName,
+                                    OrderLineItem::getQuantity
+                            )
+                            .containsExactly(
+                                    tuple("One", 1),
+                                    tuple("Three", 3),
+                                    tuple("Two", 2)
+                            );
                 });
 
         verifyMenuServiceCalled();

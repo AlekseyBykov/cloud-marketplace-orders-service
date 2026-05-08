@@ -2,17 +2,13 @@ package dev.abykov.cloudmarketplace.orders.testdata;
 
 import dev.abykov.cloudmarketplace.orders.dto.api.Address;
 import dev.abykov.cloudmarketplace.orders.dto.api.CreateOrderRequest;
-import dev.abykov.cloudmarketplace.orders.entity.OrderLineItem;
 import okhttp3.mockwebserver.MockResponse;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 
 public final class TestDataProvider {
@@ -28,11 +24,6 @@ public final class TestDataProvider {
             "wiremock/partially-success-response.json";
 
     private TestDataProvider() {
-    }
-
-    public static MockResponse successResponse() {
-        return jsonResponse(readSuccessfulResponse())
-                .setResponseCode(HttpStatus.OK.value());
     }
 
     public static MockResponse partialSuccessResponse() {
@@ -63,14 +54,6 @@ public final class TestDataProvider {
                         )
                 )
                 .build();
-    }
-
-    public static List<OrderLineItem> createdItems() {
-        return List.of(
-                createItem(MENU_ONE, 10.1, 10),
-                createItem(MENU_TWO, 20.2, 20),
-                createItem(MENU_THREE, 30.3, 30)
-        );
     }
 
     public static String readSuccessfulResponse() {
@@ -105,18 +88,6 @@ public final class TestDataProvider {
                 .street("")
                 .house(-1)
                 .apartment(-1)
-                .build();
-    }
-
-    private static OrderLineItem createItem(
-            String name,
-            double price,
-            int quantity
-    ) {
-        return OrderLineItem.builder()
-                .menuItemName(name)
-                .price(BigDecimal.valueOf(price))
-                .quantity(quantity)
                 .build();
     }
 

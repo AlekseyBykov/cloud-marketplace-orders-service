@@ -118,14 +118,13 @@ public class OrderServiceImpl implements OrderService {
      * @throws OrderServiceException if any item is unavailable
      */
     private void validateAvailability(OrderMenuResponse infoResponse) {
-
         boolean allAvailable = infoResponse.getItems().stream()
                 .allMatch(MenuInfo::isAvailable);
 
         if (!allAvailable) {
             throw new OrderServiceException(
                     "Some menu items are not available",
-                    HttpStatus.BAD_REQUEST
+                    HttpStatus.NOT_FOUND
             );
         }
     }
