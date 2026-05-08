@@ -31,3 +31,9 @@ external:
   retry-backoff: 100ms
   retry-count: 5
   retry-jitter: 0.75
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
