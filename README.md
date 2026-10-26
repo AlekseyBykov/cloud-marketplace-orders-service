@@ -2,12 +2,14 @@
 
 ### Overview
 
-Cloud Marketplace Orders Service is a reactive microservice responsible for managing customer orders.
+Orders Service is a reactive Java microservice responsible for creating and retrieving customer orders within the Cloud
+Marketplace application.
 
-The service is built using **Spring WebFlux** and **R2DBC**, providing non-blocking data access and asynchronous request
-handling.
+Built with Spring WebFlux and Spring Data R2DBC, the service uses non-blocking HTTP and database operations. It
+integrates with Menu Service to resolve menu items and prices during order creation.
 
-It is designed as part of a larger microservices ecosystem.
+The service is developed as part of a personal engineering project focused on microservices architecture, reactive
+programming, distributed systems, and backend development with Java.
 
 The service exposes a reactive REST API for:
 
@@ -16,16 +18,28 @@ The service exposes a reactive REST API for:
 * validating incoming requests
 * handling HTTP/API errors using RFC 7807 Problem Details
 
-## Tech Stack
+**Project links:**
 
-* Java 21
-* Spring Boot 3.2
-* Spring WebFlux (reactive)
-* Spring Data R2DBC
-* PostgreSQL 16
-* Flyway (database migrations)
-* Testcontainers (integration testing)
-* Docker / Docker Compose
+- [Cloud Marketplace — Main Repository](https://github.com/AlekseyBykov/cloud-marketplace)
+- [Development Board](https://github.com/users/AlekseyBykov/projects/2)
+- [Menu Service](https://github.com/AlekseyBykov/cloud-marketplace-menu-service)
+
+### Tech Stack
+
+| Component               | Technology                             |
+|-------------------------|----------------------------------------|
+| Language                | Java 21                                |
+| Framework               | Spring Boot 3.2                        |
+| Web                     | Spring WebFlux                         |
+| HTTP Client             | Spring WebClient                       |
+| Persistence             | Spring Data R2DBC                      |
+| Database                | PostgreSQL 16                          |
+| Database migrations     | Flyway                                 |
+| Build                   | Gradle                                 |
+| Testing                 | JUnit 5, Testcontainers, WebTestClient |
+| HTTP dependency testing | WireMock, MockWebServer                |
+| Infrastructure          | Docker, Docker Compose                 |
+| API documentation       | OpenAPI / Swagger UI                   |
 
 ### Running the Application
 
@@ -235,3 +249,14 @@ This allows:
 * R2DBC is used for runtime operations (non-blocking)
 * Docker is required for integration tests
 * External services are mocked in tests (no real HTTP calls)
+
+### Project Background
+
+Cloud Marketplace was initially inspired by the [JavaOps](https://javaops.ru/) training program.
+
+The project is being developed further as a personal engineering initiative, focusing on architectural decisions,
+practical implementation, testing strategies, and the evolution of a distributed Java application.
+
+### License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
